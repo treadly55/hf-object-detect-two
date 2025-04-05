@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
         statusElement.textContent = 'Loading model... (may take a few seconds)';
         try {
             // Dynamically import the pipeline function from the CDN
-            const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
-
+            const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+            env.allowLocalModels = false;
             // Load the object detection pipeline with the specific model
             // This downloads the model to the browser cache
             detector = await pipeline('object-detection', 'Xenova/yolos-tiny');
