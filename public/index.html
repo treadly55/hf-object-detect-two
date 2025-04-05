@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection MVP</title>
+</head>
+    <body>
+        <h1>Core Object Detection Test</h1>
+
+        <p id="status">Initializing...</p>
+
+        <div id="image-container" style="position: relative; max-width: 600px; margin-bottom: 10px;">
+            <img
+                id="test-image"
+                src="test-image.jpg"  alt="Test image"
+                style="max-width: 100%; display: block;"
+            />
+        </div>
+
+        <button id="detect-button" disabled>Detect Objects</button>
+
+        <script type="module" src="app.js"></script>
+
+    </body>
+</html>

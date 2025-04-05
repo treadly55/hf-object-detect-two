@@ -1,0 +1,22 @@
+# Configuration file for Render deployment (render.yaml)
+services:
+  # Define a web service
+  - type: web
+    # Name for your service on Render's dashboard
+    name: object-detection-core-mvp # You can change this if you like
+    # Specify the runtime environment
+    env: node
+    # Specify the Node.js version (optional, but good practice - choose one compatible with your code/dependencies)
+    # Check Render's supported Node versions if needed. 18 or 20 are usually safe bets.
+    # Uncomment the following lines and set the version if desired:
+    # envVars:
+    #  - key: NODE_VERSION
+    #    value: 18
+    # Specify the plan (Render offers a free tier for web services)
+    plan: free
+    # Command Render uses to install dependencies (from package.json)
+    buildCommand: "npm install"
+    # Command Render uses to start your application (from package.json 'start' script)
+    startCommand: "npm start"
+    # Optional: Specify the region for deployment (e.g., Oregon, Frankfurt)
+    # region: oregon
