@@ -10,6 +10,8 @@
 
         <p id="status">Initializing...</p>
 
+
+
         <div id="image-container" style="position: relative; max-width: 600px; margin-bottom: 10px;">
             <img
                 id="test-image"
@@ -18,7 +20,11 @@
             />
         </div>
 
+        <label for="image-upload">Upload Image:</label>
+        <input type="file" id="image-upload" accept="image/*" style="margin-bottom: 10px;">
+    
         <button id="detect-button" disabled>Detect Objects</button>
+
 
         <script type="module" src="app.js"></script>
 

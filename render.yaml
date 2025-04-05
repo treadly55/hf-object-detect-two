@@ -3,7 +3,7 @@ services:
   # Define a web service
   - type: web
     # Name for your service on Render's dashboard
-    name: object-detection-core-mvp # You can change this if you like
+    name: hf-object-detect-three # You can change this if you like
     # Specify the runtime environment
     env: node
     # Specify the Node.js version (optional, but good practice - choose one compatible with your code/dependencies)
