@@ -1,0 +1,35 @@
+/* Ensure the container can position the absolute boxes */
+#image-container {
+    position: relative; /* Already set inline, but good to have here */
+    max-width: 600px;   /* Or whatever max-width you prefer */
+    margin-bottom: 10px;/* Already set inline */
+    display: inline-block; /* Helps container wrap the image */
+}
+
+/* Make image responsive within the container */
+#image-container img {
+    display: block;     /* Prevents extra space below image */
+    max-width: 100%;
+    height: auto;
+}
+
+/* Base styles for the bounding box itself */
+.bounding-box {
+    position: absolute; /* Crucial for positioning based on JS calculations */
+    border: 2px solid red; /* Default border, JS will override color */
+    box-sizing: border-box; /* Ensures border is included in width/height */
+    pointer-events: none; /* Allows clicking through the box onto the image if needed */
+}
+
+/* Styles for the label attached to the box */
+.bounding-box-label {
+    position: absolute;
+    top: -1.2em; /* Position label slightly above the box */
+    left: 0;
+    background-color: red; /* Default background, JS will override */
+    color: white;
+    font-size: 0.8em;
+    padding: 2px 4px;
+    white-space: nowrap; /* Prevent label text from wrapping */
+    border-radius: 3px;
+}

@@ -24,54 +24,80 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * Draws a bounding box and label for a single detected object.
+     * @param {object} detectedObject - Object containing label, score, and box coordinates.
+     */
+    function drawObjectBox(detectedObject) {
+        const { label, score, box } = detectedObject;
+        const { xmax, xmin, ymax, ymin } = box; // Expecting percentages (0-1)
+
+        // Generate a random color for the box and label background
+        const color = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, 0);
+
+        // Create the bounding box div
+        const boxElement = document.createElement('div');
+        boxElement.className = 'bounding-box'; // CSS class for styling
+        Object.assign(boxElement.style, {
+            borderColor: color,
+            left: (100 * xmin) + '%',
+            top: (100 * ymin) + '%',
+            width: (100 * (xmax - xmin)) + '%',
+            height: (100 * (ymax - ymin)) + '%',
+        });
+
+        // Create the label span
+        const labelElement = document.createElement('span');
+        labelElement.textContent = `${label}: ${Math.floor(score * 100)}%`;
+        labelElement.className = 'bounding-box-label'; // CSS class for styling
+        labelElement.style.backgroundColor = color; // Match background to border color
+
+        // Append the label to the box, and the box to the main image container
+        boxElement.appendChild(labelElement);
+        imageContainer.appendChild(boxElement); // Appends the box to the div wrapping the image
+    }
+
+    /**
      * Handles the event when a user selects a file using the file input.
      * Reads the file as a Data URL and displays it in the image element.
      * @param {Event} event - The 'change' event object from the file input.
      */
     function handleImageUpload(event) {
-        const file = event.target.files[0]; // Get the selected file (first file if multiple allowed)
+        const file = event.target.files[0]; // Get the selected file
 
-        // Exit if no file was selected
         if (!file) {
             statusElement.textContent = 'No file selected.';
-            return;
+            return; // Exit if no file was chosen
         }
 
-        // Check if the selected file is an image
         if (!file.type.startsWith('image/')) {
             statusElement.textContent = 'Error: Please select an image file.';
-            alert('Error: Please select an image file.'); // User feedback
-            fileInput.value = ''; // Reset file input to allow re-selection of the same file if needed
+            alert('Error: Please select an image file.');
+            fileInput.value = ''; // Reset file input
             return;
         }
 
-        // Clear any old bounding boxes from previous image/detection
-        clearBoundingBoxes();
+        clearBoundingBoxes(); // Clear old boxes before loading new image
         statusElement.textContent = 'Loading image...';
         detectButton.disabled = true; // Disable button while loading new image
 
         const reader = new FileReader();
 
-        // This function runs when the FileReader successfully reads the file
         reader.onload = (e) => {
-            // e.target.result contains the image data as a base64 Data URL
-            imageElement.src = e.target.result;
+            imageElement.src = e.target.result; // Set image source to Data URL
             statusElement.textContent = 'Image loaded. Ready to detect.';
-            // Enable the detect button ONLY if the model has also loaded
+            // Enable detect button only if the model is also loaded
             if (detector) {
                 detectButton.disabled = false;
             }
         };
 
-        // Handle potential errors during file reading
         reader.onerror = (e) => {
             console.error("File reading error:", e);
             statusElement.textContent = 'Error reading file.';
-            detectButton.disabled = true; // Keep button disabled on error
+            detectButton.disabled = true;
         };
 
-        // Initiate the file reading process
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(file); // Start reading
     }
 
     // --- 4. Main Async Function to Load the AI Model ---
@@ -79,19 +105,12 @@ document.addEventListener('DOMContentLoaded', () => {
         detectButton.disabled = true; // Keep button disabled initially
         statusElement.textContent = 'Loading model... (may take a few seconds)';
         try {
-            // Dynamically import the pipeline function and env object from the CDN
             const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
-
-            // Disable checks for local models to prevent 404s
-            env.allowLocalModels = false;
-
-            // Load the object detection pipeline
+            env.allowLocalModels = false; // Prevent checking local paths -> no 404s
             detector = await pipeline('object-detection', 'Xenova/yolos-tiny');
-
             statusElement.textContent = 'Model loaded. Please upload an image.';
             console.log('Detector loaded:', detector);
-            // Keep button disabled here; enable it only after an image is loaded successfully
-            // detectButton.disabled = false;
+            // Keep button disabled; it will be enabled by handleImageUpload if model is ready
 
         } catch (error) {
             console.error('Error loading model:', error);
@@ -102,18 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 5. Add Event Listeners ---
 
-    // Add listener to the file input to handle user selection
+    // Listener for file input changes
     fileInput.addEventListener('change', handleImageUpload);
 
-    // Add listener to the detect button
+    // Listener for the detect button click
     detectButton.addEventListener('click', async () => {
-        // Ensure the detector is ready
+        // Guard clauses: Ensure model is loaded and an image is present
         if (!detector) {
             statusElement.textContent = 'Detector not ready. Please wait or reload.';
             return;
         }
-        // Ensure there is a valid image source loaded (not the initial state or placeholder)
-        // Check specifically for Data URLs starting with 'data:image/'
         if (!imageElement.src || !imageElement.src.startsWith('data:image/')) {
              statusElement.textContent = 'Please upload an image first.';
              return;
@@ -121,22 +138,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         statusElement.textContent = 'Detecting objects...';
         detectButton.disabled = true; // Disable button during detection
-        clearBoundingBoxes(); // Clear any previous boxes before running detection
+        clearBoundingBoxes(); // Clear any previous boxes before drawing new ones
 
         try {
-            const imageSrc = imageElement.src; // Src will be the Data URL from file upload
+            const imageSrc = imageElement.src;
             console.log(`Running detection on uploaded image...`);
 
-            // Run the object detection pipeline
+            // Perform detection
             const output = await detector(imageSrc, { threshold: 0.9, percentage: true });
 
-            console.log('Detection Output:', output); // Log results to console
-            statusElement.textContent = `Detection complete. Found ${output.length} objects. Check console for details.`;
+            console.log('Detection Output:', output);
 
-            // --- Placeholder for Drawing Bounding Boxes ---
-            // Later, we will loop through 'output' here and draw boxes visually.
-            // e.g., output.forEach(obj => drawObjectBox(obj));
-            // ---------------------------------------------
+            // --- Draw Bounding Boxes (Limit to 10 for MVP) ---
+            const limitedOutput = output.slice(0, 10);
+            limitedOutput.forEach(detectedObject => {
+                drawObjectBox(detectedObject); // Call helper function for each object
+            });
+            // --- End Bounding Box Drawing ---
+
+            // Update status message based on results
+            if (output.length > 0) {
+                 statusElement.textContent = `Detection complete. Displaying top ${limitedOutput.length} of ${output.length} objects found.`;
+            } else {
+                 statusElement.textContent = `Detection complete. No objects found.`;
+            }
 
         } catch (error) {
             console.error('Error during detection:', error);
