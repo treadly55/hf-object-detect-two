@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const detectButton = document.getElementById('detect-button');   // The <button>
     const imageContainer = document.getElementById('image-container'); // The <div> containing the image
     const fileInput = document.getElementById('image-upload');     // The <input type="file">
+    const detectionListElement = document.getElementById('detection-list-container')
 
     // --- 2. Global variable to hold the loaded model pipeline ---
     let detector = null;
@@ -63,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function handleImageUpload(event) {
         const file = event.target.files[0]; // Get the selected file
+        detectionListElement.style.display = "none"
 
         if (!file) {
             statusElement.textContent = 'No file selected.';
@@ -77,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         clearBoundingBoxes(); // Clear old boxes before loading new image
+        detectionListElement.innerHTML = '';
         statusElement.textContent = 'Loading image...';
         detectButton.disabled = true; // Disable button while loading new image
 
@@ -146,19 +149,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Perform detection
             const output = await detector(imageSrc, { threshold: 0.9, percentage: true });
-
             console.log('Detection Output:', output);
 
             // --- Draw Bounding Boxes (Limit to 10 for MVP) ---
             const limitedOutput = output.slice(0, 10);
-            limitedOutput.forEach(detectedObject => {
-                drawObjectBox(detectedObject); // Call helper function for each object
-            });
+            
+            if (limitedOutput.length > 0) {
+                limitedOutput.forEach(detectedObject => {
+                    // 1. Draw the bounding box (existing functionality)
+                    drawObjectBox(detectedObject);
+    
+                    // 2. Create and append list item
+
+                    const { label, score } = detectedObject;
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${label}: ${Math.floor(score * 100)}%`;
+                    detectionListElement.appendChild(listItem);
+                    detectionListElement.style.display = "flex";
+                });
+            } else {
+                 // Handle case where no objects are detected above threshold
+                 const listItem = document.createElement('li');
+                 listItem.textContent = 'No objects detected above threshold.';
+                 detectionListElement.appendChild(listItem);
+            }
+
             // --- End Bounding Box Drawing ---
 
             // Update status message based on results
             if (output.length > 0) {
                  statusElement.textContent = `Detection complete. Displaying top ${limitedOutput.length} of ${output.length} objects found.`;
+                 
             } else {
                  statusElement.textContent = `Detection complete. No objects found.`;
             }

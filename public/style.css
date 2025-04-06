@@ -33,3 +33,17 @@
     white-space: nowrap; /* Prevent label text from wrapping */
     border-radius: 3px;
 }
+
+.upload-controls {
+    margin-bottom: 40px;
+}
+
+#detect-button {
+    font-size: 1.2rem;
+}
+
+#detection-list-container {
+    display: none;
+    flex-direction: column;
+    margin-bottom: 30px;
+}
