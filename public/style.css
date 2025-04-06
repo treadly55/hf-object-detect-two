@@ -1,16 +1,21 @@
-/* Ensure the container can position the absolute boxes */
+
 #image-container {
-    position: relative; /* Already set inline, but good to have here */
-    max-width: 600px;   /* Or whatever max-width you prefer */
-    margin-bottom: 10px;/* Already set inline */
-    display: inline-block; /* Helps container wrap the image */
+    position: relative; 
+    max-width: 600px;   
+    margin: 20px auto;
+    display: block;
+    width: 100%;
 }
 
 /* Make image responsive within the container */
 #image-container img {
-    display: block;     /* Prevents extra space below image */
+    display: block;    
+    max-height: 450px;
     max-width: 100%;
+    width: auto;
     height: auto;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Base styles for the bounding box itself */
