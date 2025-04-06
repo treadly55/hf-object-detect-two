@@ -1,43 +1,25 @@
-// Wait for the DOM to be fully loaded before running the script
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 1. Get References to HTML Elements ---
     const statusElement = document.getElementById('status');
-    const imageElement = document.getElementById('test-image');      // The <img> tag
-    const detectButton = document.getElementById('detect-button');   // The <button>
-    const imageContainer = document.getElementById('image-container'); // The <div> containing the image
-    const fileInput = document.getElementById('image-upload');     // The <input type="file">
-    const detectionListElement = document.getElementById('detection-list-container')
+    const imageElement = document.getElementById('test-image');
+    const detectButton = document.getElementById('detect-button');
+    const imageContainer = document.getElementById('image-container');
+    const fileInput = document.getElementById('image-upload');
+    const detectionListElement = document.getElementById('detection-list'); // Corrected ID
 
-    // --- 2. Global variable to hold the loaded model pipeline ---
     let detector = null;
 
-    // --- 3. Helper Functions ---
-
-    /**
-     * Removes any previously drawn bounding boxes from the image container.
-     */
     function clearBoundingBoxes() {
-        // Find all elements with the class 'bounding-box' inside the container
         const existingBoxes = imageContainer.querySelectorAll('.bounding-box');
-        // Remove each found box
         existingBoxes.forEach(box => box.remove());
     }
 
-    /**
-     * Draws a bounding box and label for a single detected object.
-     * @param {object} detectedObject - Object containing label, score, and box coordinates.
-     */
     function drawObjectBox(detectedObject) {
         const { label, score, box } = detectedObject;
-        const { xmax, xmin, ymax, ymin } = box; // Expecting percentages (0-1)
-
-        // Generate a random color for the box and label background
+        const { xmax, xmin, ymax, ymin } = box;
         const color = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, 0);
-
-        // Create the bounding box div
         const boxElement = document.createElement('div');
-        boxElement.className = 'bounding-box'; // CSS class for styling
+        boxElement.className = 'bounding-box';
         Object.assign(boxElement.style, {
             borderColor: color,
             left: (100 * xmin) + '%',
@@ -45,141 +27,122 @@ document.addEventListener('DOMContentLoaded', () => {
             width: (100 * (xmax - xmin)) + '%',
             height: (100 * (ymax - ymin)) + '%',
         });
-
-        // Create the label span
         const labelElement = document.createElement('span');
         labelElement.textContent = `${label}: ${Math.floor(score * 100)}%`;
-        labelElement.className = 'bounding-box-label'; // CSS class for styling
-        labelElement.style.backgroundColor = color; // Match background to border color
-
-        // Append the label to the box, and the box to the main image container
+        labelElement.className = 'bounding-box-label';
+        labelElement.style.backgroundColor = color;
         boxElement.appendChild(labelElement);
-        imageContainer.appendChild(boxElement); // Appends the box to the div wrapping the image
+        imageContainer.appendChild(boxElement);
     }
 
-    /**
-     * Handles the event when a user selects a file using the file input.
-     * Reads the file as a Data URL and displays it in the image element.
-     * @param {Event} event - The 'change' event object from the file input.
-     */
     function handleImageUpload(event) {
-        const file = event.target.files[0]; // Get the selected file
-        detectionListElement.style.display = "none"
+        const file = event.target.files[0];
+        // Hide list on new upload attempt? This might not be desired UX. Consider removing.
+        // detectionListElement.style.display = "none";
 
         if (!file) {
             statusElement.textContent = 'No file selected.';
-            return; // Exit if no file was chosen
+            return;
         }
-
         if (!file.type.startsWith('image/')) {
             statusElement.textContent = 'Error: Please select an image file.';
             alert('Error: Please select an image file.');
-            fileInput.value = ''; // Reset file input
+            fileInput.value = '';
             return;
         }
-
-        clearBoundingBoxes(); // Clear old boxes before loading new image
-        detectionListElement.innerHTML = '';
+        clearBoundingBoxes();
+        if (detectionListElement) { // Check if element exists before clearing
+             detectionListElement.innerHTML = '';
+        }
         statusElement.textContent = 'Loading image...';
-        detectButton.disabled = true; // Disable button while loading new image
-
+        detectButton.disabled = true;
         const reader = new FileReader();
-
         reader.onload = (e) => {
-            imageElement.src = e.target.result; // Set image source to Data URL
+            imageElement.src = e.target.result;
             statusElement.textContent = 'Image loaded. Ready to detect.';
-            // Enable detect button only if the model is also loaded
             if (detector) {
                 detectButton.disabled = false;
             }
         };
-
         reader.onerror = (e) => {
             console.error("File reading error:", e);
             statusElement.textContent = 'Error reading file.';
             detectButton.disabled = true;
         };
-
-        reader.readAsDataURL(file); // Start reading
+        reader.readAsDataURL(file);
     }
 
-    // --- 4. Main Async Function to Load the AI Model ---
     async function loadModel() {
-        detectButton.disabled = true; // Keep button disabled initially
+        detectButton.disabled = true;
         statusElement.textContent = 'Loading model... (may take a few seconds)';
         try {
             const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
-            env.allowLocalModels = false; // Prevent checking local paths -> no 404s
+            env.allowLocalModels = false;
             detector = await pipeline('object-detection', 'Xenova/yolos-tiny');
-            statusElement.textContent = 'Model loaded. Please upload an image.';
+            statusElement.textContent = 'Model loaded. Ready to detect initial image or upload.'; // Plan A Change
             console.log('Detector loaded:', detector);
-            // Keep button disabled; it will be enabled by handleImageUpload if model is ready
-
+            detectButton.disabled = false; // Plan A Change: Enable button now
         } catch (error) {
             console.error('Error loading model:', error);
             statusElement.textContent = 'Failed to load model. See console for details.';
-            // Keep button disabled if model loading fails
         }
     }
 
-    // --- 5. Add Event Listeners ---
-
-    // Listener for file input changes
     fileInput.addEventListener('change', handleImageUpload);
 
-    // Listener for the detect button click
     detectButton.addEventListener('click', async () => {
-        // Guard clauses: Ensure model is loaded and an image is present
         if (!detector) {
             statusElement.textContent = 'Detector not ready. Please wait or reload.';
             return;
         }
-        if (!imageElement.src || !imageElement.src.startsWith('data:image/')) {
-             statusElement.textContent = 'Please upload an image first.';
+        // Plan A Change: Check if image src is valid and image has loaded dimensions
+        if (!imageElement.src || imageElement.naturalWidth === 0) {
+             statusElement.textContent = 'No image loaded or ready for detection.'; // Plan A Change: Updated message
              return;
         }
 
         statusElement.textContent = 'Detecting objects...';
-        detectButton.disabled = true; // Disable button during detection
-        clearBoundingBoxes(); // Clear any previous boxes before drawing new ones
+        detectButton.disabled = true;
+        clearBoundingBoxes();
+        if (detectionListElement) { // Check if element exists before clearing
+            detectionListElement.innerHTML = '';
+        }
 
         try {
             const imageSrc = imageElement.src;
-            console.log(`Running detection on uploaded image...`);
+            // Log slightly differently depending on source? Optional.
+            console.log(`Running detection on ${imageSrc.startsWith('data:image/') ? 'uploaded' : 'initial'} image...`);
 
-            // Perform detection
+
             const output = await detector(imageSrc, { threshold: 0.9, percentage: true });
             console.log('Detection Output:', output);
 
-            // --- Draw Bounding Boxes (Limit to 10 for MVP) ---
             const limitedOutput = output.slice(0, 10);
-            
+
             if (limitedOutput.length > 0) {
                 limitedOutput.forEach(detectedObject => {
-                    // 1. Draw the bounding box (existing functionality)
                     drawObjectBox(detectedObject);
-    
-                    // 2. Create and append list item
-
                     const { label, score } = detectedObject;
                     const listItem = document.createElement('li');
                     listItem.textContent = `${label}: ${Math.floor(score * 100)}%`;
-                    detectionListElement.appendChild(listItem);
-                    detectionListElement.style.display = "flex";
+                    if (detectionListElement) { // Check if element exists before appending
+                        detectionListElement.appendChild(listItem);
+                    }
                 });
+                 // Consider setting display style for list element here if needed, outside the loop
+                 // if (detectionListElement) detectionListElement.style.display = "block"; // Or remove if CSS handles it
             } else {
-                 // Handle case where no objects are detected above threshold
-                 const listItem = document.createElement('li');
-                 listItem.textContent = 'No objects detected above threshold.';
-                 detectionListElement.appendChild(listItem);
+                 if (detectionListElement) { // Check if element exists before appending
+                     const listItem = document.createElement('li');
+                     listItem.textContent = 'No objects detected above threshold.';
+                     detectionListElement.appendChild(listItem);
+                     // Consider setting display style here too
+                     // detectionListElement.style.display = "block"; // Or remove if CSS handles it
+                 }
             }
 
-            // --- End Bounding Box Drawing ---
-
-            // Update status message based on results
             if (output.length > 0) {
                  statusElement.textContent = `Detection complete. Displaying top ${limitedOutput.length} of ${output.length} objects found.`;
-                 
             } else {
                  statusElement.textContent = `Detection complete. No objects found.`;
             }
@@ -187,14 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error during detection:', error);
             statusElement.textContent = 'Detection failed. See console for details.';
+             if (detectionListElement) { // Check if element exists before clearing
+                detectionListElement.innerHTML = '<li>Error during detection.</li>';
+             }
         } finally {
-            // Re-enable the button regardless of success or failure
             detectButton.disabled = false;
         }
     });
 
-    // --- 6. Initial Load ---
-    // Start loading the AI model as soon as the script runs
     loadModel();
 
-}); // End of DOMContentLoaded listener
+});
