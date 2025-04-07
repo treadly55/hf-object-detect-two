@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Log slightly differently depending on source? Optional.
             console.log(`Running detection on ${imageSrc.startsWith('data:image/') ? 'uploaded' : 'initial'} image...`);
 
-            const output = await detector(imageSrc, { threshold: 0.5, percentage: true });
+            const output = await detector(imageSrc, { threshold: 0.3, percentage: true });
             console.log('Detection Output:', output);
 
             const limitedOutput = output.slice(0, 10);
