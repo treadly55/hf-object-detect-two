@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
             env.allowLocalModels = false;
-            detector = await pipeline('object-detection', 'Xenova/yolos-tiny');
+            detector = await pipeline('object-detection', 'Xenova/yolos-small');
             statusElement.textContent = 'Model loaded. Ready to detect initial image or upload.'; // Plan A Change
             console.log('Detector loaded:', detector);
             detectButton.disabled = false; // Plan A Change: Enable button now
@@ -113,8 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Log slightly differently depending on source? Optional.
             console.log(`Running detection on ${imageSrc.startsWith('data:image/') ? 'uploaded' : 'initial'} image...`);
 
-
-            const output = await detector(imageSrc, { threshold: 0.9, percentage: true });
+            const output = await detector(imageSrc, { threshold: 0.5, percentage: true });
             console.log('Detection Output:', output);
 
             const limitedOutput = output.slice(0, 10);
